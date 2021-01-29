@@ -1,0 +1,178 @@
+data IMPORT;
+set IMPORT;
+run;
+
+proc means data = WORK.IMPORT;
+  var Income Limit Rating Cards Age Balance ;
+run;
+
+proc freq data = WORK.IMPORT;
+  table Ethnicity ;
+run;
+
+/*Grup bazlı ortalamalar*/
+proc sort data  = WORK.IMPORT;
+  by Ethnicity ;
+run;
+proc means data  = WORK.IMPORT;
+  by Ethnicity ;
+  var Income Limit Rating Cards Age Balance;
+run;
+
+/*Tek yoklu manova*/
+proc glm data  = WORK.IMPORT;
+  class Ethnicity ;
+  model Income Limit Rating Cards Age Balance = Ethnicity / SS3;
+  manova h = Ethnicity ;
+  title 'Tek Yönlü Manova';
+run;
+
+/*İki yoklu manova*/
+proc glm data  = WORK.IMPORT;
+  class Ethnicity Student;
+  model Income Limit Rating Cards Age Balance = Ethnicity*Student  / SS3;
+  manova h = Ethnicity*Student  ;
+  title 'İki Yönlü Manova';
+run;
+
+/*Faktör Analizi*/
+proc factor data=WORK.IMPORT /*name of data file*/
+ nobs=400 /*number of observations*/
+ corr /*print correlation matrix*/
+ /*priors=max  types of priors to be used*/
+ method=principal /*method of extraction*/
+ nfactors=2 /*number of factors to retain*/
+ maxiter = 25 /*maximum number of iterations*/
+ rotate=varimax  /*type of rotation */
+ msa
+ scree /*print of scree plot*/
+ res /*display residual correlation matrix*/
+ preplot
+ plot
+heywood;/*sets to 1 any communality greater than 1, allowing iterations to proceed*/
+var Income Limit Rating Cards Age Balance; /*variables to be included*/
+title 'Faktör Analizi';
+run;
+
+/*Diskriminant Analizi*/
+proc freq data=WORK.IMPORT;
+  tables Married;
+  title 'Diskriminant Analizi';
+run;
+
+proc corr data=WORK.IMPORT; 
+var Income Rating Cards Age;
+run;
+
+proc discrim data=WORK.IMPORT can simple;
+class Married;
+var Income Rating Cards Age;
+priors proportional;
+run;
+
+proc stepdisc data=WORK.IMPORT;
+class Married;
+var Income Rating Cards Age;
+run;
+
+/* Binary Lojistik Regresyon*/
+proc logistic data=WORK.IMPORT;
+model Gender(ref="Female") = Income Limit Rating Cards Age Balance /expb lackfit rsquare ;
+output out=outdata p=pred_prob lower=low upper=up;
+title 'Binary Lojistik Regresyon';
+run;
+
+data outdata;
+set outdata;
+if pred_prob > 0.5 then pred ='Male' ;
+else pred ='Female';
+run;
+
+proc freq data=outdata;;
+table Gender*pred;
+run;
+
+/* Multinomial Lojistik Regresyon*/
+proc logistic data=WORK.IMPORT;
+model Ethnicity(ref="Asian") = Income Limit Rating Cards Age Balance /expb lackfit rsquare ;
+output out=outdata p=pred_prob lower=low upper=up;
+title 'Çoklu Lojistik Regresyon';
+run;
+
+proc cluster data=import method=centroid nonorm outtree=centroid; 
+
+/*method="average","complete", "single" ya da "centroid" */
+/*SIMPLE basit istatistikelri verir,
+  RMSSTD her küme için root-mean-square standard deviation verir, 
+  RSQUARE  küme çözümleri için R2 and semipartial R2 değerlerini verir.
+  NONORM uzaklıkları normalleştirmeden verir. */ 
+
+ID Kredi_ID; /*ID gözlemlerin isimlerini görüntülemek için*/
+VAR  Limit Rating Cards Age Balance; /*Analize girecek değişkenlerin adları*/
+title 'Hiyerarşik Kümeleme Analizi';
+run;
+
+data WORK.IMPORT; /*Aykırı değer olan Canned Sardine gözleminin veri setinden çıkarılması*/
+set import;
+if Kredi_ID not in ('Canned sardines');
+run;
+proc cluster data=WORK.IMPORT  method=centroid nonorm out=tree; 
+ID Kredi_ID; /*ID gözlemlerin isimlerini görüntülemek için*/
+VAR  Income Limit Rating Cards Age Balance; /*Analize girecek değişkenlerin adları*/
+run;
+
+proc tree data=tree out=clust nclusters=3; /*dendogram çizimi prosedürü*/
+/*NCLUSTERS= OUT= içinde olması istenen küme sayısı*/
+Id Kredi_ID;
+copy Income Limit Rating Cards Age Balance;
+run;
+
+proc sort; by cluster;
+proc print; by cluster;
+var Income Limit Rating Cards Age Balance;
+title '3 Küme için Çözüm';
+run;
+
+
+/*K-MEANS KÜMELEME ANALİZİ*/
+ods noproctitle;
+proc fastclus data=WORK.IMPORT maxiter=10 maxclusters=3 list distance out=clust; 
+	var Income Limit Rating Cards Age Balance;
+	id Kredi_ID;
+	title 'K-MEANS KÜMELEME ANALİZİ';
+run;
+/*maxcluster=k
+ list= Gözlemlerin hangi kümeye atandığı listesini çıktıya ekler
+ distance=Küme merkezleri arasındaki uzaklığı çıktıya ekler 
+ out= Küme atanmalarını ve küme merkezine olan uzaklıklarını veri setine kaydeder (clust adında) */
+
+
+proc glm data=clust; /*Değişkenlerin kümelemede anlamlı olup olmadığını görmek için glm komutu kullanılıyor */
+class cluster;
+model Income=cluster;
+run;
+
+proc glm data=clust; 
+class cluster;
+model Rating=cluster;
+run;
+
+proc glm data=clust; 
+class cluster;
+model Limit=cluster;
+run;
+
+proc glm data=clust; 
+class cluster;
+model Cards=cluster;
+run;
+
+proc glm data=clust; 
+class cluster;
+model Age=cluster;
+run;
+
+proc glm data=clust; 
+class cluster;
+model Balance=cluster;
+run;

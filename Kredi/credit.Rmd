@@ -1,0 +1,1393 @@
+---
+title: "Cok Degiskenli Istatistiksel Yontemler"
+author: "Github: ozgurnrttn"
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: no
+    toc: yes
+    toc_float: yes
+    df_print: paged
+  html_notebook:
+    fig_caption: yes
+    number_sections: no
+    toc: yes
+    toc_float: yes
+---
+# Önsöz
+
+Ödev kapsamında incelenen kişilerin kredi kartı kullanım verileri  
+Veri setinin orjinal haline [Buradan](https://statlearning.com/data.html) ulaşabilirsiniz.
+
+
+[Github](https://github.com/ozgurnrttn)
+
+Değişken Tanımları;
+
+Değişken    | İsim| Bilgi
+--------------|-----------|----------
+Income | Gelir| Scaler
+Limit | Limit| Scaler
+Rating | Kredi Notu| Scaler
+Cards | Kart Sayısı| Scaler
+Age | Yaş| Scaler
+Education | Eğitim | Ordinal, 5 ile 15 arasında
+Gender | Cinsiyet | Nominal, 0=Kadın, 1=Erkek
+Student | Öğrenım Drurumu | Nominal,  0=Öğrenci Değil, 1=Öğrenci
+Married | Evlilik | Nominal,  0=Bekar, 1=Evli
+Ethnicity | Etnik Köken| Nominal,  0=Asya, 1=Kafkasya, 2=Afrika ve Amerika
+Balance | Bakiye| Scaler
+
+Verinin yapısı ile ilgili bilgiler;
+
+•	Veride 11 değişken vardır.
+
+1.	6 adet scaler değişken,
+
+2.	4 adet nominal değişken,
+
+3.	1 adet ordinal değişken vardır.
+
+•	Veri 400 gözlemden oluşmaktadır.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE}
+library("haven")
+library("tidyverse")
+library("fBasics")
+library("dplyr")
+library("biotools")
+library("car")
+library("gplots")
+library("rstatix")
+library("broom")
+library("heplots")
+library("gplots")
+```
+
+```{r}
+kredi <- read_sav("C:/Users/oztur/OneDrive/Masaüstü/credit.sav")
+kredi = as.data.frame(kredi)
+kredi$Ethnicity<-factor(kredi$Ethnicity,levels = c(0,1,2),labels=c("Asian","Caucasian","African American"))
+kredi$Gender<-factor(kredi$Gender,levels = c(0,1),labels=c("Kadin","Erkek"))
+kredi$Student<-factor(kredi$Student,levels = c(0,1),labels=c("Ogrenci Degil","Ogrenci"))
+kredi$Married<-factor(kredi$Married,levels = c(0,1),labels=c("Bekar","Evli"))
+kredi$Education = as.ordered(kredi$Education)
+glimpse(kredi)
+```
+
+```{r}
+summary(kredi)
+```
+Verinin tanımsal istatistikleri
+
+
+```{r}
+as_tibble(kredi)
+```
+
+Verinin gösterimi
+
+# 1. Normallik
+## 1. Degişkenlerin Normallik Varsayımlarının kontrolü
+
+```{r}
+kredi %>%
+  dplyr::select(Income, Limit, Rating,Cards, Age, Balance) %>%
+  mshapiro_test()
+```
+
+$H_0$: Veri Seti Normal Dağılmamaktadır.
+
+$H_A$: Veri Seti Normal Dağılmaktadır.
+
+Bütün değişkenlerin sig. değeri 0,05’ten küçük olduğu için $H_0$ reddedilir.
+
+%95 Güven düzeyinde değişkenler normal dağılımdan gelmemektedir.
+
+
+
+
+```{r}
+shapiroTest(kredi$Income)
+
+```
+$H_0$: Gelir Değişkeni Normal Dağılmamaktadır.
+
+$H_A$: Gelir Değişkeni Normal Dağılmaktadır.
+
+Bütün değişkenlerin sig. değeri 0,05’ten küçük olduğu için $H_0$ reddedilir.
+
+%95 Güven düzeyinde gelir değişkeni normal dağılımdan gelmemektedir.
+
+```{r}
+shapiroTest(kredi$Limit)
+```
+$H_0$: Limit Değişkeni Normal Dağılmamaktadır.
+
+$H_A$: Limit Değişkeni Normal Dağılmaktadır.
+
+Bütün değişkenlerin sig. değeri 0,05’ten küçük olduğu için $H_0$ reddedilir.
+
+%95 Güven düzeyinde limit değişkeni normal dağılımdan gelmemektedir.
+
+
+```{r}
+shapiroTest(kredi$Rating)
+```
+$H_0$: Kredi Notu  Değişkeni Normal Dağılmamaktadır.
+
+$H_A$: Kredi Notu Değişkeni Normal Dağılmaktadır.
+
+Bütün değişkenlerin sig. değeri 0,05’ten küçük olduğu için $H_0$ reddedilir.
+
+%95 Güven düzeyinde kredi notu değişkeni normal dağılımdan gelmemektedir.
+
+
+```{r}
+shapiroTest(kredi$Cards)
+```
+$H_0$: Kart Sayısı Değişkeni Normal Dağılmamaktadır.
+
+$H_A$: Kart Sayısı Değişkeni Normal Dağılmaktadır.
+
+Bütün değişkenlerin sig. değeri 0,05’ten küçük olduğu için $H_0$ reddedilir.
+
+%95 Güven düzeyinde kart sayisi değişkeni normal dağılımdan gelmemektedir.
+
+
+```{r}
+shapiroTest(kredi$Balance)
+```
+
+$H_0$: Bakiye Değişkeni Normal Dağılmamaktadır.
+
+$H_A$: Bakiye Değişkeni Normal Dağılmaktadır.
+
+Bütün değişkenlerin sig. değeri 0,05’ten küçük olduğu için $H_0$ reddedilir.
+
+%95 Güven düzeyinde bakiye değişkeni normal dağılımdan gelmemektedir.
+
+**NOT: NORMALLİK VARSAYIMI SAĞLANDIĞI VARSAYILARAK DEVAM EDİLMİŞTİR.**
+
+## 1.2 Degiskenlerin Grafikleri
+
+```{r}
+par(mfrow=c(1,2),bg = "grey",lwd=2,font.lab=2,font.axis = 2)
+
+hist(kredi$Income,col = "Red",main=" Gelir", lwd = 2,font.lab=2,font.axis =
+2)
+boxplot(kredi$Income,col = "Blue",main=" Gelir",lwd=2,cex.axis = 1.5)
+
+```
+
+```{r}
+par(mfrow=c(1,2),bg = "grey",lwd=2,font.lab=2,font.axis = 2)
+
+hist(kredi$Limit,col = "Red",main=" Limit", lwd = 2,font.lab=2,font.axis =
+2)
+boxplot(kredi$Limit,col = "Blue",main=" Limit",lwd=2,cex.axis = 1.5)
+
+
+
+```
+
+```{r}
+par(mfrow=c(1,2),bg = "grey",lwd=2,font.lab=2,font.axis = 2)
+
+hist(kredi$Rating,col = "Red",main=" Kredi Notu", lwd = 2,font.lab=2,font.axis =
+2)
+boxplot(kredi$Rating,col = "Blue",main=" Kredi Notu",lwd=2,cex.axis = 1.5)
+
+
+```
+
+```{r}
+par(mfrow=c(1,2),bg = "grey",lwd=2,font.lab=2,font.axis = 2)
+
+hist(kredi$Cards,col = "Red",main=" Kart Sayısı", lwd = 2,font.lab=2,font.axis =
+2)
+boxplot(kredi$Cards,col = "Blue",main=" Kart Sayısı",lwd=2,cex.axis = 1.5)
+
+```
+
+```{r}
+par(mfrow=c(1,2),bg = "grey",lwd=2,font.lab=2,font.axis = 2)
+
+hist(kredi$Age,col = "Red",main=" Yas", lwd = 2,font.lab=2,font.axis =
+2)
+boxplot(kredi$Age,col = "Blue",main=" Yas",lwd=2,cex.axis = 1.5)
+```
+
+
+```{r}
+par(mfrow=c(1,2),bg = "grey",lwd=2,font.lab=2,font.axis = 2)
+
+hist(kredi$Balance,col = "Red",main=" Bakiye", lwd = 2,font.lab=2,font.axis =
+2)
+boxplot(kredi$Balance,col = "Blue",main=" Bakiye",lwd=2,cex.axis = 1.5)
+
+```
+
+# 2. Tek Yölü Manova
+##  2.1 Varyans Kovaryans Matrisi Eşitliği
+```{r}
+boxM(kredi[,c("Income", "Limit", "Rating", "Cards", "Age","Balance" )], kredi$Ethnicity)
+
+```
+$H_0$: Gruplara göre varyans-kovaryans matrisi eşittir.
+
+$H_A$: Gruplara göre varyans-kovaryans matrisi eşit değildir.
+
+Sig, değeri 0,05’den büyük olduğu için $H_0$ reddedilmez.
+
+%95 güven düzeyi ile gruplara göre varyans kovaryans matrisi eşittir denilebilir.
+
+
+## 2.2 Varyansların Homojen Dağılım Testi
+```{r}
+leveneTest(Income ~ Ethnicity, data=kredi,center=mean)
+
+```
+
+```{r}
+
+leveneTest(Limit ~ Ethnicity, data=kredi,center=mean)
+```
+
+```{r}
+
+leveneTest(Rating ~ Ethnicity, data=kredi,center=mean)
+```
+
+```{r}
+
+leveneTest(Cards ~ Ethnicity, data=kredi,center=mean)
+```
+
+```{r}
+
+leveneTest(Age ~ Ethnicity, data=kredi,center=mean)
+```
+
+```{r}
+
+leveneTest(Balance ~ Ethnicity, data=kredi,center=mean)
+```
+
+$H_0$: Varyanslar homejen dağılır.
+
+$H_A$: Varyanslar homojen dağılmaz.
+
+Değişkenlerin sig. değeri 0,05’ten büyük olduğu için $H_0$ reddedilir.
+
+%95 güven ile değişkenlerin varyansları homojen değildir.
+
+
+## 2.3 Degiskenlere Göre Ortalamalar ve Ortalama Çizimleri
+
+```{r}
+attach(kredi)
+aggregate(kredi[,c(1:5,11)], list(Gender), mean)
+```
+
+```{r}
+
+aggregate(kredi[,c(1:5,11)], list(Married), mean)
+```
+
+```{r}
+
+aggregate(kredi[,c(1:5,11)], list(Student), mean)
+```
+
+```{r}
+
+aggregate(kredi[,c(1:5,11)], list(Ethnicity), mean)
+```
+
+Kategorik değişkenlerin sürekle değişkenler üzerinde ortalamaları.
+
+
+
+## 2.4 Ethnicity Değişkeninin Ortalama Çizimleri
+
+Aşağıdaki grafiklerde etnik köken değişkeninin sürekli eğişkenler üzerinde ortalama çizimleri yer almaktadır 
+
+```{r}
+
+plotmeans(Income~Ethnicity,xlab="Etnik Köken",ylab="Gelir", main="Mean Plot\nwith 95% CI")
+```
+
+```{r}
+
+plotmeans(Limit~Ethnicity,xlab="Etnik Köken",ylab="Limit", main="Mean Plot\nwith 95% CI")
+```
+
+```{r}
+
+plotmeans(Rating~Ethnicity,xlab="Etnik Köken",ylab="Kredi Notu", main="Mean Plot\nwith 95% CI")
+```
+
+```{r}
+
+plotmeans(Cards~Ethnicity,xlab="Etnik Köken",ylab="Kart Sayısı", main="Mean Plot\nwith 95% CI")
+```
+
+```{r}
+
+plotmeans(Age~Ethnicity,xlab="Etnik Köken",ylab="Yas", main="Mean Plot\nwith 95% CI")
+```
+
+```{r}
+
+plotmeans(Balance~Ethnicity,xlab="Etnik Köken",ylab="Bakiye", main="Mean Plot\nwith 95% CI")
+```
+
+## 2.5. Manova
+
+```{r}
+
+kredi_manova <- manova(cbind(Income, Limit, Rating, Cards, Age, Balance) ~ Ethnicity,data=kredi)
+summary(kredi_manova, test = "Hotelling-Lawley")
+
+```
+
+```{r}
+
+summary(kredi_manova, test = "Wilks")
+```
+
+```{r}
+
+summary(kredi_manova, test = "Pillai")
+```
+
+```{r}
+
+summary(kredi_manova, test = "Roy")
+```
+
+$H_0$: Etnik köken diğer bağımlı değişkenlerin ortalamaları üzerinde anlamlı farklılık gösterir.
+
+$H_A$: Etnik köken diğer bağımlı değişkenlerin ortalamaları üzerinde anlamlı farklılık göstermez.
+
+Wilk’s Lambda Sig, 0,05’ten büyük olduğu için $H_0$ reddedilmez.
+
+%95 Güven düzeyinde etnik köken, diğer bağımlı değişkenlerin ortalamaları üzerinde anlamlı farklılık gösterir.
+
+
+## 2.6. Farklılık Yaratan Değişken
+
+```{r}
+
+summary.aov(kredi_manova)
+```
+
+$H_0$: Etnik köken değişkenler üzerinde etkili değildir.
+
+$H_A$: Etnik köken değişkenler üzerinde etkilidir.
+
+Değişkenlerin sig. değerleri 0,05’ten büyük ise $H_0$ reddedilir.
+
+%95 Güven ile etnik köken diğer değişkenler üzerinde istatistiksel olarak etkilidir denilebilir.
+
+
+## 2.7. Çoklu karşılaştırma
+
+$H_0$: İki grup arasında anlamlı farklılıklar yoktur
+
+$H_A$: İki grup arasında anlamlı farklılık vardır
+
+Değişkenin sig. değeri 0.05’den küçük ise $H_0$ reddedilir.
+
+**Değişkenler tektek yorumlanacaktır**
+
+
+```{r}
+
+tatmin_aov <- aov(Income ~ Ethnicity, data = kredi)
+TukeyHSD(tatmin_aov, "Ethnicity")
+
+```
+
+Asyalıların gelir durumu ile Kasfkasyalılar arasında anlamlı farklılık yok.
+
+Asyalıların gelir durumu ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+Kasfkasyalıların gelir durumu ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+```{r}
+
+tatmin_aov <- aov(Limit ~ Ethnicity, data = kredi)
+TukeyHSD(tatmin_aov, "Ethnicity")
+
+```
+
+Asyalıların limit durumu ile Kasfkasyalılar arasında anlamlı farklılık yok.
+
+Asyalıların limit durumu ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+Kasfkasyalıların limit durumu ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+
+```{r}
+
+tatmin_aov <- aov(Rating ~ Ethnicity, data = kredi)
+TukeyHSD(tatmin_aov, "Ethnicity")
+
+```
+
+Asyalıların kredi notu ile Kasfkasyalılar arasında anlamlı farklılık yok.
+
+Asyalıların kredi notu ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+Kasfkasyalıların kredi notu ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+```{r}
+
+tatmin_aov <- aov(Cards ~ Ethnicity, data = kredi)
+TukeyHSD(tatmin_aov, "Ethnicity")
+
+```
+
+Asyalıların kart sayısı ile Kasfkasyalılar arasında anlamlı farklılık yok.
+
+Asyalıların kart sayısı ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+Kasfkasyalıların kart sayısı ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+```{r}
+
+tatmin_aov <- aov(Age ~ Ethnicity, data = kredi)
+TukeyHSD(tatmin_aov, "Ethnicity")
+
+```
+
+Asyalıların yaş ortalaması ile Kasfkasyalılar arasında anlamlı farklılık yok.
+
+Asyalıların yaş ortalaması ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+Kasfkasyalıların yaş ortalaması ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+
+```{r}
+
+tatmin_aov <- aov(Balance ~ Ethnicity, data = kredi)
+TukeyHSD(tatmin_aov, "Ethnicity")
+
+```
+
+Asyalıların bakiyeleri ile Kasfkasyalılar arasında anlamlı farklılık yok.
+
+Asyalıların bakiyeleri ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+Kasfkasyalıların bakiyeleri ile Afrika ve Amerikalılıar arasında anlamlı farklılık yoktur.
+
+## 2.8. ikili Karşılaştırma
+
+```{r}
+
+m_tukey2 <- kredi %>%
+  pivot_longer( c(Income, Age),names_to = "variables", values_to = "value") %>%
+  group_by(variables) %>%
+  tukey_hsd(value ~ Ethnicity)
+m_tukey2<-m_tukey2[,c(1,2,4,3,5:9)]
+m_tukey2
+```
+
+```{r}
+
+m_gh_3 <- kredi %>%
+  pivot_longer( c(Income, Age),names_to = "variables", values_to = "value") %>%
+  group_by(variables) %>%
+  games_howell_test(value ~ Ethnicity) 
+m_gh_3<-m_gh_3[,c(1,2,4,3,5:9)]
+m_gh_3
+```
+
+# 3. Çift Yönlü Manova
+
+```{r}
+library("heplots")
+boxM( cbind(Income, Limit, Rating, Cards, Age, Balance) ~ Ethnicity*Student, data=kredi)
+
+```
+$H_0$: Gruplararası varyans - kovaryans matrisi eşittir
+
+$H_A$: Gruplaraarası göre varyans - kovaryans matrisi eşit değildir.
+
+Sig. değeri 0.05’den küçük olduğu için $H_0$ reddedilir.
+
+%95 güven düzeyi ile gruplara göre varyans - kovaryans matrisi eşit değildir.
+
+## 3.1 Manova
+
+```{r}
+kredi_cift <- manova(cbind(Income, Limit, Rating, Cards, Age, Balance) ~ Ethnicity*Student,data=kredi)
+
+summary(kredi_cift, test = "Wilks")
+```
+
+$H_0$: Etnik köken ve öğrencilik durumu göre ortalanan değişkenlerin seviyeleri anlamlı farklılık göstermemektedir.
+
+$H_A$: Etnik köken ve öğrencilik durumu göre ortalanan değişkenlerin seviyeleri anlamlı farklılık göstermektedir.
+
+Wilks’ Lambda sig. değeri 0.05’den büyük olduğu için $H_0$ reddedilemez.
+
+%95 güven ile etnik köken ve öğrencilik durumu göre ortalanan değişkenlerin seviyeleri anlamlı farklılık göstermemektedir denilebilir.
+
+```{r}
+
+library(car)
+kredi %>% 
+  pivot_longer( c(1:5,11),names_to = "variable", values_to = "value") %>%
+  group_by(variable) %>%
+  levene_test(value ~ Ethnicity*Student,center=mean)
+
+```
+
+$H_0$: Etnik köken ve öğrencilik durumu bütün değişkenler üzerinde istatistiksel etkili değildir.
+
+$H_A$: Etnik köken ve öğrencilik durumu bütün değişkenler üzerinde istatistiksel etkilidir.
+
+Değişkenlerin sig. değerleri 0,05’ten büyük ise $H_0$ reddedilir.
+
+%95 Güven ile Etnik köken ve öğrencilik durumu bütün değişkenler üzerinde istatistiksel olarak etkilidir.
+
+```{r}
+
+summary.aov(kredi_cift)
+```
+
+```{r}
+
+m_tukey22 <- kredi %>%
+  pivot_longer( c(1:5,11),names_to = "variables", values_to = "value") %>%
+  group_by(variables) %>%
+  tukey_hsd(value ~ Ethnicity*Student)
+m_tukey22<-m_tukey22[,c(1,2,4,3,5:9)]
+Ethnicity_etk=filter(m_tukey22, term=="Ethnicity")
+Ethnicity_etk
+```
+
+
+## 3.2 Etnik Köken Öe Öğrencilik Durumu İçin Etkilesim Grafikleri
+```{r}
+
+interaction.plot(Ethnicity, Student,Income, fun=mean, type="l", legend=TRUE,col=1:4, lwd=2)
+
+```
+
+```{r}
+
+
+interaction.plot(Ethnicity, Student,Limit, fun=mean, type="l", legend=TRUE,col=1:4, lwd=2)
+```
+
+```{r}
+
+
+interaction.plot(Ethnicity, Student,Rating, fun=mean, type="l", legend=TRUE,col=1:4, lwd=2)
+```
+
+```{r}
+
+
+interaction.plot(Ethnicity, Student,Cards, fun=mean, type="l", legend=TRUE,col=1:4, lwd=2)
+```
+
+```{r}
+
+
+interaction.plot(Ethnicity, Student,Age, fun=mean, type="l", legend=TRUE,col=1:4, lwd=2)
+```
+
+```{r}
+
+
+interaction.plot(Ethnicity, Student,Balance, fun=mean, type="l", legend=TRUE,col=1:4, lwd=2)
+```
+
+# 4. Temel Bileşenler Analizi
+## 4.1 Korelasyon
+
+```{r, message= FALSE}
+library(GGally)
+kor_kredi = kredi[, c(1:5,11)]
+ggpairs(kor_kredi)
+
+```
+
+```{r, warning=FALSE, message=FALSE}
+library("Hmisc")
+rcorr(as.matrix(kor_kredi),type="pearson") 
+```
+
+```{r}
+library(corrplot)
+corrplot(cor(kor_kredi))
+```
+
+Çalışmada yüksek ilişkili olan değişkenler çalışmadan çıkartılmıştır.
+
+## 4.2 Kaiser-Meyer-Olkin (KMO) Örneklem Yeterliliği Ölçüsü ve Bartlett Küresellik Testi
+
+```{r, warning=FALSE, message=FALSE}
+
+library(psych)
+KMO(kor_kredi)
+```
+
+```{r}
+cortest.bartlett(cor(kor_kredi),nrow(kor_kredi))
+
+```
+$H_0$: R=I (Korelayan matrisi birim matrise eşittir)
+
+$H_A$: R≠I (Korelayan matrisi birim matrise eş değildir)
+
+Bartlet Test sig değeri 0,05’den küçük olduğu için $H_0$ reddedilmez
+
+%95 güven düzeyinde temel bileşenler analizine gerek vardır.
+
+KMO değeri %50 nin üzerinde olduğu için veriseti gözlemi uygundur.
+
+
+```{r}
+
+fit.pca <- prcomp( ~., data=kor_kredi, scale=TRUE) # korelasyon matrisi icin scale=TRUE yaz 
+fit.pca$rotation
+```
+
+Değişkenlerin faktör yükleri
+
+```{r}
+as_tibble(fit.pca$x)
+```
+
+Gözlemlerin faötör yükleri
+
+```{r}
+
+summary(fit.pca)  #Cumulative Proportion kısmında %66 yı geçen kısma bakılır veya Standard deviation sıkmında 1'in altında düşmeden önceki kısıma bakılır
+```
+
+Varyans açıklama oranı %66’lık kısmı geçtiği için 2. değer olan %74,280 alınır.
+
+```{r}
+
+(fit.pca$sdev)^2
+```
+## 4.3. Faktör Yükleri Grafikleri
+```{r}
+
+plot(fit.pca)
+```
+
+```{r}
+
+plot(fit.pca,type="line")
+```
+
+```{r, warning=FALSE, message=FALSE}
+
+library(factoextra)
+scree <- fviz_eig(fit.pca)
+scree
+```
+
+```{r}
+
+fit.pca$rotation[,1:2]
+```
+$$Z_1 = 0,44Income + 0,53Limit + 0,03Rating + 0,08Age + 0,47Balance $$
+$$Z_2 = -0,44Income + 0,06Limit + 0,03Rating - 0,76Age + 0,10Balance $$
+
+```{r}
+faktor_yukleri<-t(fit.pca$rotation)*fit.pca$sdev # koklambda ile carpılmıs $H_A$li bu da bizi faktore goturuyor
+faktor_yukleri
+
+```
+
+```{r}
+
+#skorları veriye kaydetme
+kredi$comp1=fit.pca$x[,1] 
+kredi$comp2=fit.pca$x[,2] 
+
+#indeks olusturma ### 
+kredi$index=kredi$comp1+kredi$comp2
+indeks<-sort(kredi$index, decreasing = F)
+head(indeks)# Gözlem sayısı çok olduğunda kullanılablir.
+```
+
+## 4.4. Değişkenlerin Faktörler Üzerindeki Dağılım Grafiği
+
+```{r}
+library(factoextra)
+fviz_pca_var(fit.pca,col.var="steelblue",
+             repel = TRUE )
+
+```
+
+# 5. Faktör Analizi
+
+## 5.1 Korelasyon
+
+```{r, warning=FALSE, message=FALSE}
+
+library(corrplot)
+library(matlib)
+corrplot(cor(kor_kredi))
+
+```
+
+```{r}
+korelasyon<-cor(kor_kredi)
+korelasyon
+
+```
+
+```{r}
+
+library("Hmisc") #anlamlılık değerleriyle birlikte görmek istersek (2-tailed sonuçlar)
+rcorr(as.matrix(kor_kredi),type="pearson")
+```
+
+Çalışmada yüksek ilişkili olan değişkenler çalışmadan çıkartılmıştır.
+
+```{r}
+
+invkor<-inv(korelasyon)# korelasyon matrisinin tersi (VIF)
+colnames(invkor)<-rownames(invkor)<-colnames(korelasyon) # değişken isimleri yazması için
+invkor
+
+```
+
+## 5.2  Kaiser-Meyer-Olkin (KMO) Örneklem Yeterliliği Ölçüsü ve Bartlett Küresellik Testi
+
+```{r}
+
+library(psych)
+KMO(kor_kredi)
+```
+
+```{r}
+
+cortest.bartlett(cor(kor_kredi),nrow(kor_kredi))
+```
+$H_0$: R=I (Korelayan matrisi birim matrise eşittir)
+
+$H_A$: R≠I (Korelayan matrisi birim matrise eş değildir)
+
+Bartlet Test sig değeri 0,05’den küçük olduğu için $H_0$ reddedilmez
+
+%95 güven düzeyinde temel bileşenler analizine gerek vardır.
+
+KMO değeri %50 nin üzerinde olduğu için veriseti gözlemi uygundur.
+
+
+## 5.3 Temel Bilesenler Analizi Yöntemi(Kok lambda yaklasimi) ile Faktör Analizi
+
+```{r}
+
+fa_kokl<-principal(kor_kredi, nfactors =2, rotate = "none")
+fit.pca2 <- prcomp( ~., kor_kredi, scale=TRUE) 
+print(fa_kokl$loadings, digits=3, cutoff=.0, sort=TRUE)
+```
+Varyans açıklama oranı %66’lık kısmı geçtiği için 2. değer olan %74,280 alınır.
+
+```{r}
+
+fa_kokl$communality
+```
+
+```{r}
+
+fa_kokl$loadings[ , ]^2
+```
+
+```{r}
+
+rowSums(fa_kokl$loadings[ , ]^2)
+```
+
+```{r}
+
+var_oran<-colSums(fa_kokl$loadings[ , ]^2)/9 #varyans aciklama oranlari
+var_oran
+```
+
+```{r}
+
+sum(var_oran)
+```
+
+## 5.4. Faktör Yükleri Grafikleri
+
+```{r}
+
+plot(fa_kokl$values, type="b", main="ScreePlot", xlab="Number of Factors", ylab="Eigenvalues")
+```
+
+```{r}
+
+library(factoextra) #109. satıra bağlı bir fonksiyon
+scree <- fviz_eig(fit.pca2)
+scree
+```
+
+```{r}
+
+artik_kor<-fa_kokl$residual ## Artık korelasyon matrisi
+artik_kor
+```
+
+```{r}
+
+length(artik_kor[abs(artik_kor)<0.05])/72
+```
+
+```{r}
+fa_kok1<-principal(kor_kredi, nfactors =2, rotate = "varimax")
+print(fa_kokl$loadings, kor_krediits=3, cutoff=.3, sort=TRUE)
+```
+
+```{r}
+
+fa_kok2<-principal(kor_kredi[,-4], nfactors =2, rotate = "varimax")
+print(fa_kokl$loadings, digits=3, cutoff=.3, sort=TRUE)
+```
+
+$Z_1$ = 0,992*Limit + 0,993*Kredi Notu + 0,866*Bakiye + 0,824*Gelir
+
+$Z_2$= 0,788*Yaş + 0,640*Kart Sayısı
+
+
+## 5.5. Değişkenlerşn Faktörler Üzerindeki Dağılım Grafiği
+
+```{r}
+
+fa.diagram(fa_kok1)
+```
+
+```{r}
+fyuk2=fa_kokl$loadings[,1:2]
+factor.plot(fyuk2, cut=0.5, labels=rownames(fa_kokl$loadings),font=2, cex=0.8)
+
+```
+
+# 6. Diskriminant Analizi
+
+## 6.1. Değişkenlerin Korelasyon Grafikleri
+```{r}
+library(corrplot)
+corrplot(cor(kredi[,c(1:5,11)]), method="number")
+
+```
+
+Değişken korelasyon değerleri %80 üzerinde ise alınmaz. Korelasyonu yüksek değişkenler çalışmadan çıkartılmıştır.
+
+## 6.2. Değişkenlerin Toplu Normallik İncelemesi
+
+```{r}
+kredi_New = kredi[, c(1,3,4,5,9)]
+library(rstatix)
+kredi_New %>% 
+  dplyr::select(!c(Married)) %>%
+  mshapiro_test()
+```
+
+
+$H_0$: Veri Seti Normal Dağılmamaktadır.
+
+$H_A$: Veri Seti Normal Dağılmaktadır.
+
+Bütün değişkenlerin sig. değeri 0,05’ten küçük olduğu için $H_0$ reddedilir.
+
+%95 Güven düzeyinde değişkenler normal dağılımdan gelmemektedir.
+
+## 6.3. Box'ın Kovaryans Matrislerinin Eşitliği Testi
+
+```{r}
+
+boxM(kredi[,c(1:5,11)], kredi$Married)
+```
+$H_0$: Gruplararası varyans - kovaryans matrisi eşittir
+
+$H_A$: Gruplaraarası göre varyans - kovaryans matrisi eşit değildir.
+
+Sig. değeri 0.05’den büyük olduğu için $H_0$ reddedilmez.
+
+%95 güven düzeyi ile gruplara göre varyans - kovaryans matrisi eşittir.
+
+
+## 6.4. Ayrınsama Fonksiyonu
+
+```{r}
+library(MASS) 
+lda_kredi <- lda(Married ~ Income + Rating + Age + Cards, data=kredi_New) 
+lda_kredi
+
+```
+$$ Y= -0,01Income + 0,001Rating - 0,05Age - 0,05Cards $$
+
+```{r}
+cons<-apply(kredi_New[,-5], 2, mean)
+(-cons)%*%(lda_kredi$scaling)
+```
+
+```{r}
+
+lda.pred <- predict(lda_kredi)
+#lda.pred$class # Sinifatamalari 
+
+#plots
+ldahist(lda.pred$x, g = kredi$Married)
+```
+
+
+```{r}
+
+tablo<-table(kredi$Married,lda.pred$class)
+tablo
+```
+
+Ayrınsama fonksiyonunun atamaları
+
+```{r}
+
+classrate<-sum(diag(tablo))/sum(tablo)
+classrate
+```
+
+```{r}
+
+lda_kredi$prior[1]^2 + lda_kredi$prior[2]^2
+```
+
+```{r}
+
+comp<-cbind(kredi_New$Married,lda.pred$class)
+as_tibble(comp) 
+```
+
+Ayrınsama fonksiyonunun atamalarının tamamı
+
+```{r}
+
+library(klaR)
+kredistep<-greedy.wilks(kredi_New[,-5],kredi_New[,5])
+summary(kredistep)
+```
+## 6.5. Ayrınsama Fonksiyonunun Testi
+
+```{r}
+
+kredistep$results
+```
+
+$H_0$: Ayrımsama fonksiyonları önemsizdir (Diskirminant önemsiz)
+
+$H_A$: Ayrımsama fonksiyonları önemlidir (Diskirminant önemsiz) 
+
+Sig değerleri 0,05’ten büyük olduğu için $H_0$ reddedilmez. 
+
+%95 Güven ile ayrınsama fonksiyonu önemli değildir.
+
+
+# 7. Lojistik Regresyon
+
+## 7.1. Değişkenlerin Eklenmesinin Modele Katkısı
+
+```{r}
+kredi.glm = glm( Gender ~ Income+Limit+Rating+Cards+Age+
+                   Education+Student+Married+Ethnicity+Balance,family=binomial, data=kredi)
+summary(kredi.glm)
+
+```
+
+$H_0$: Değişkenler eklenmesinin modele katkısı yoktur. 
+
+$H_A$: Değişkenler eklenmesinin modele katkısı vardır. 
+
+Değişkenlerin Sig değerleri 0,05’ten büyük olduğu için $H_0$ reddedilmez. 
+
+%95 Güven ile değişkenlerin eklenmesinin modele katkısı yoktur.
+
+
+```{r}
+names(kredi.glm)
+```
+
+```{r}
+kredi.glm$coefficients
+```
+
+$$In(\frac{pi}{1-pi} )= – 0,446 + 0,010*Income + 0,0001*Limit – 0,002*Rating + 0,031*Cards – 0,001*Age +$$ $$5,673*Education_{(1)} - 6,230*Education_{(2)} + 6,062*Education_{(3)} - 5,138*Education_{(4)} + 4,074*Education_{(5)} $$ $$- 2,886*Education_{(6)} + 2,515*Education_{(7)} - 2,092*Education_{(8)} + 1,365*Education_{(9)} - 0,992*Education_{(10)} $$ $$- 0,018*Education_{(11)} - 0,158*Education_{(12)} + 0,001*Education_{(13)} + 0,306*Education_{(14)} + 0,361*Education_{(15)} $$ $$ – 0,762*Student_{(ogrenci)} – 0,068*Married_{(evli)} + 0,122*Ethnicity_{(saucasian)} 0,134*Ethnicity_{(african-american)} + 0,01*Balance$$
+
+## 7.2. Ki-kare İstatistginin Hesabi
+```{r}
+kredi.glm$deviance
+```
+
+```{r}
+kredi.glm$null.deviance
+```
+
+```{r}
+kikare<- kredi.glm$null.deviance-kredi.glm$deviance
+kikare
+```
+## 7.3. Serbestlik Derecesinin Hesaplanması
+```{r}
+kredi.glm$df.null
+```
+
+```{r}
+kredi.glm$df.residual
+```
+
+```{r}
+df<-kredi.glm$df.null-kredi.glm$df.residual
+df
+```
+
+
+```{r}
+kikare.p<- 1 - pchisq(kikare,df)
+kikare.p
+```
+
+```{r}
+
+library(ResourceSelection)
+hoslem.test(kredi.glm$y,fitted(kredi.glm))
+
+```
+
+$H_0$: Oluşturulan model veri ile uyumludur
+
+$H_A$: Oluşturulan model veri ile uyumlu değildir.
+
+Sig. değeri 0,05’den büyük olduğu için $H_0$ reddedilmez
+
+%95 Güven ile oluşturulan model veri ile uyumludur.
+
+## 7.4. Modelin $R^2$ degerleri
+### 7.4.1. CoxSnell Nagelkerke
+```{r, warning=FALSE, message=FALSE}
+library("DescTools")
+PseudoR2(kredi.glm, which = c("CoxSnell","Nagelkerke"))
+```
+
+Denenen diğer modeller arasında $R^2$’si en yüksek olan metot seçilmiştir
+
+## 7.5. Lojistik Regresyon Modeli
+```{r}
+exp(coef(kredi.glm))
+exp(confint.default(kredi.glm,level = 0.95))
+```
+
+Değişkenlilerin %95 ile güven aralıkları
+
+## 7.6. Atamalar Tablosu
+### 7.6.1. Atama Tablosu
+```{r}
+genderpred<-fitted(kredi.glm)
+thresh  <- 0.5
+genderfac<- cut(genderpred, breaks=c(-Inf, thresh, Inf), labels=c("Kadin", "Erkek"))
+cTab <- table(kredi$Gender, genderfac)
+cTab
+```
+
+Kadınlarının cinsiyetinin %62,3’ünü doğru atamıştır. 
+
+Erkeklerin cinsiyetinin %51,3’ünü doğru atamıştır. 
+
+### 7.6.2. Toplam Dogru Atanma Yüzdesi
+```{r}
+
+sum(diag(cTab)) / sum(cTab)
+```
+
+Toplam cinsiyet atamalarının %57,0’sini doğru yapmıştır.
+
+### 7.6.3. Atama Tablosu Görselleştirilmesi
+```{r}
+library(cvms)
+library(ggplot2)
+library(broom)    # tidy()
+library(tibble)   # tibble()
+datatib <- tibble("target" = kredi$Gender,"prediction" = genderfac)
+datatib
+basic_table <- table(datatib)
+basic_table
+cfm <- tidy(basic_table)
+cfm
+
+```
+
+Modelin atamasındaki dağılım
+
+```{r}
+plot_confusion_matrix(cfm, 
+                      target_col = "target", 
+                      prediction_col = "prediction",
+                      counts_col = "n",
+                      add_normalized = FALSE,
+                      add_row_percentages = FALSE,
+                      font_col_percentages= font(size = 6),
+                      font_counts = font(size = 6),
+                      tile_border_color = "black")+
+                      xlab("Gerçek")+
+                      ylab("Tahmin")+
+                      theme(axis.text=element_text(size=12,face="bold"),axis.title=element_text(size=14,face="bold"))
+  
+```
+
+# 8. Çoklu Lojistik Regresyon
+
+## 8.1. Değişkenlerin Model İçin Anlamlılığı
+```{r}
+levels(kredi$Ethnicity)
+```
+
+```{r, warning=FALSE, message=FALSE}
+library(mlogit)
+
+ml.data <- mlogit.data(kredi, choice="Ethnicity", shape="wide")
+loj_kredi <- mlogit(Ethnicity ~ 0 |Income+Limit+Rating+Cards+Age+Balance+Gender +Student + Married, data=ml.data, reflevel = 'Asian')
+summary(loj_kredi)
+
+```
+$H_0$: Değişkenler modele anlamlı bir katkı sağlamamaktadır. 
+
+$H_A$: Değişkenler modele anlamlı bir katkı sağlamaktadır. 
+
+Sig. değeri 0,05’den büyük olduğu için $H_0$ Reddedilmez 
+
+%95 güven ile değişkenler model için anlamlı değildir.
+
+
+
+
+```{r}
+exp(loj_kredi$coefficients)
+```
+## 8.2. $R^2$ Değerleri
+
+```{r, warning=FALSE, message=FALSE}
+library("DescTools")
+library(nnet)
+multi_mo <- multinom(Ethnicity ~ Income+Limit+Rating+Cards+Age+Balance+Gender +Student + Married, data = kredi)
+PseudoR2(multi_mo, which = c("CoxSnell","Nagelkerke","McFadden"))
+```
+Test edilen diğer modeller arasında en yüksek R2 değeri olduğu için kullanılmıştır.
+
+## 8.3. Sınıflandırma Tablosu
+
+```{r}
+tahminkat<-colnames(loj_kredi$probabilities)[max.col(loj_kredi$probabilities)]
+tahminkat<-as.factor(tahminkat)
+```
+
+
+```{r}
+kredi_table<- table(kredi$Ethnicity, tahminkat)
+kredi_table
+```
+
+Asya kökenlilerin hiçbirini doğru atamamıştır. 
+
+Kafkasya kökenlilerin %98,5’ini doğru atamıştır. 
+
+Afrika ve Amerika kökenlilerin hiçbirini doğru atamamıştır. 
+
+
+```{r}
+sum(diag(kredi_table)) / sum(kredi_table)
+```
+Toplam atamanın %49,0’unu doğru atanmıştır.
+
+# 9. Kümeleme Analizi
+
+```{r}
+
+kredi <- na.omit(kredi) # eksik gözlemlerin çikarilmasi
+kredi_surekli = kredi[,c(1:5,11)]
+str(kredi_surekli)
+```
+
+```{r}
+
+d <- dist(kredi_surekli, method = "euclidean") # uzaklik matrisi
+fit <- hclust(d, method="complete") # method="average" , "ward.D2", "single", "centroid"
+plot(fit) # Dendogram çizimi
+```
+
+```{r}
+d2 <- dist(kredi_surekli, method = "euclidean") # uzaklik matrisi
+fit2 <- hclust(d2, method="complete")
+```
+
+# 10. Hiyerarşik Kümeleme Analizi
+
+```{r}
+library(factoextra)
+res.hc <- hclust(d2,  method = "complete")
+fviz_dend(res.hc, cex = 0.5, k = 3, palette = "jco") 
+```
+
+# 11. K- Means Kümeleme Analizi
+
+## 11.1. Küme Sayısının Belirlenmesi
+```{r}
+
+fviz_nbclust(kredi_surekli, kmeans, method = "wss")
+```
+
+İterasyon 3 kümede tanımlanmıştır. Stabil olmuştur.
+
+```{r}
+
+set.seed(95739487) # for reproducibility
+km.res <- kmeans(kredi_surekli,3, iter.max=10, algorithm="Lloyd")### initial[,-1] başlangıç kümelerini seçmek isterseniz
+t(km.res$centers) #Cluster means = SPSS'teki Final Cluster Centers
+```
+
+3.  kümedeki kişilerin diğer kümelerdeki kişilere göre gelir, limit, kredi notu ve bakiye değerleri daha düşük ve daha gençtir. Ortalama kart sayısı bütün kümelerde aynıdır. Sonuç olarak 1. kümede olan kişilerin gelir, limit, kredi notu ve bakiye değerleri diğer gruplardan daha yüksektir. 1. grupta olanların diğer gruplardakilerden dahazengindirler.
+
+
+## 11.2. K- Means Kümeleme Grafikleri
+```{r}
+
+library(cluster)
+clusplot(kredi_surekli, km.res$cluster, main='2D representation of the Cluster solution',
+         color=TRUE, shade=TRUE,
+         labels=2, lines=0)
+```
+
+```{r}
+
+fviz_cluster(km.res, data = kredi_surekli, palette = "jco",
+             ggtheme = theme_minimal())
+```
+## 11.3. Anova
+```{r}
+
+kredi_surekli$cluster=km.res$cluster # Veriye gözlemin atandigi kumenin eklenmesi
+kredi_surekli$cluster<-as.factor(kredi_surekli$cluster)
+library(rstatix)
+#Anova tablosu
+Income_aov <- aov(Income ~ cluster, data = kredi_surekli)
+summary(Income_aov)
+```
+
+$H_0$: Gelir sınıflamada anlamlı bir katkısı vardır.
+
+$H_A$: Gelir sınıflamada anlamlı bir katkısı yoktur.
+
+Değişkenlerin Sig. değerleri 0,05’ten küçük olduğu için $H_0$ rededilmez.
+
+%95 güven ile gelir değişkeni sınıflamada anlamlı katkı sağlamaktadır.
+
+
+```{r}
+
+Income_aov <- aov(Limit ~ cluster, data = kredi_surekli)
+summary(Income_aov)
+```
+
+$H_0$: Limit sınıflamada anlamlı bir katkısı vardır.
+
+$H_A$: Limit sınıflamada anlamlı bir katkısı yoktur.
+
+Değişkenlerin Sig. değerleri 0,05’ten küçük olduğu için $H_0$ rededilmez.
+
+%95 güven ile limit değişkeni sınıflamada anlamlı katkı sağlamaktadır.
+
+
+```{r}
+
+Income_aov <- aov(Rating ~ cluster, data = kredi_surekli)
+summary(Income_aov)
+```
+
+$H_0$: Kredi notu sınıflamada anlamlı bir katkısı vardır.
+
+$H_A$: kredi n0tu sınıflamada anlamlı bir katkısı yoktur.
+
+Değişkenlerin Sig. değerleri 0,05’ten küçük olduğu için $H_0$ rededilmez.
+
+%95 güven ile kredi notu değişkeni sınıflamada anlamlı katkı sağlamaktadır.
+
+
+```{r}
+
+Income_aov <- aov(Cards ~ cluster, data = kredi_surekli)
+summary(Income_aov)
+```
+
+$H_0$: Kart sayısı sınıflamada anlamlı bir katkısı vardır.
+
+$H_A$: Kart sayısı sınıflamada anlamlı bir katkısı yoktur.
+
+Değişkenlerin Sig. değerleri 0,05’ten küçük olduğu için $H_0$ rededilmez.
+
+%95 güven ile kart sayısı değişkeni sınıflamada anlamlı katkı sağlamaktadır.
+
+
+```{r}
+
+Income_aov <- aov(Age ~ cluster, data = kredi_surekli)
+summary(Income_aov)
+```
+
+$H_0$: Yaş sınıflamada anlamlı bir katkısı vardır.
+
+$H_A$: Yaş sınıflamada anlamlı bir katkısı yoktur.
+
+Değişkenlerin Sig. değerleri 0,05’ten küçük olduğu için $H_0$ rededilmez.
+
+%95 güven ile yaş değişkeni sınıflamada anlamlı katkı sağlamaktadır.
+
+
+```{r}
+
+Income_aov <- aov(Balance ~ cluster, data = kredi_surekli)
+summary(Income_aov)
+```
+
+$H_0$: Bakiye sınıflamada anlamlı bir katkısı vardır.
+
+$H_A$: Bakiye sınıflamada anlamlı bir katkısı yoktur.
+
+Değişkenlerin Sig. değerleri 0,05’ten küçük olduğu için $H_0$ rededilmez.
+
+%95 güven ile bakiye değişkeni sınıflamada anlamlı katkı sağlamaktadır.
