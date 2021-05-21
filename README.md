@@ -1,6 +1,9 @@
 #CDA
+
 Çok Değişkenli İstatistiksel Analiz Yöntemleri (Multivariate Statistical Analysis Techniques)
+
 Çok Değişkenli İstatistiksel Analiz yöntemlerinin R programı ile uygulanması. (The application of multivariate analysis methos in R program.)
+
 
 1. MANOVA (Multivariate Analysis of Variance)
 2. Temel Bileşenler Analizi (Principal Component Analysis, PCA)
