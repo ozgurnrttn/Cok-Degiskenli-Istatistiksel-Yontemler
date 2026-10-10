@@ -29,6 +29,7 @@ uygulanması. Aynı analizlerin SAS kodu da repoda yer alır.
 |---|---|
 | `Kredi/credit.Rmd` | R Markdown kaynak dosyası |
 | `Kredi/credit.html`, `Kredi/credit.pdf` | Derlenmiş rapor |
+| `Kredi/credit.sav` | Veri seti (SPSS formatı, 400 gözlem, 11 değişken) |
 | `Kredi/sas.txt` | Aynı analizlerin SAS kodu (`proc glm`, `proc factor`, `proc discrim`, `proc logistic`, `proc cluster`, `proc fastclus`) |
 
 ## Çalıştırma
@@ -37,10 +38,9 @@ uygulanması. Aynı analizlerin SAS kodu da repoda yer alır.
 rmarkdown::render("Kredi/credit.Rmd")
 ```
 
-Veri dosyası (`credit.sav`) repoda yok. Veriyi aşağıdaki adresten indirip `credit.Rmd` içindeki
-`read_sav()` satırındaki yolu kendi dosyana göre güncelle.
+Veri dosyası (`credit.sav`) raporla aynı klasördedir; ek bir ayar gerekmez.
 
-Kullanılan başlıca paketler: `MASS`, `car`, `psych`, `rstatix`, `factoextra`, `cluster`, `corrplot`,
+Kullanılan başlıca paketler: `haven`, `MASS`, `car`, `psych`, `rstatix`, `factoextra`, `cluster`, `corrplot`,
 `GGally`, `klaR`, `nnet`, `mlogit`.
 
 ## Veri

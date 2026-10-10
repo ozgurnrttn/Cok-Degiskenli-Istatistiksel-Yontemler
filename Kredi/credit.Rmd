@@ -90,7 +90,7 @@ library("gplots")
 ```
 
 ```{r}
-kredi <- read_sav("C:/Users/oztur/OneDrive/Masaüstü/credit.sav")
+kredi <- read_sav("credit.sav")
 kredi = as.data.frame(kredi)
 kredi$Ethnicity<-factor(kredi$Ethnicity,levels = c(0,1,2),labels=c("Asian","Caucasian","African American"))
 kredi$Gender<-factor(kredi$Gender,levels = c(0,1),labels=c("Kadin","Erkek"))
